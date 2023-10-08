@@ -12,7 +12,7 @@ filters.setup(dp)
 
 WEBAPP_HOST = "0.0.0.0"
 WEBAPP_PORT = int(os.environ.get("PORT", 5000))
-user_message = 'Пользователь'
+user_message = 'Начать диалог'
 admin_message = 'Админ'
 
 
@@ -21,21 +21,19 @@ async def cmd_start(message: types.Message):
 
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
 
-    markup.row(user_message, admin_message)
+    markup.row(user_message)
 
     await message.answer('''Привет! 👋
 
-🤖 Я бот-магазин по подаже товаров любой категории.
-    
+🤖 Black Shop 159 приветствует вас !!!
+   Предлагаем вашему вниманию широкий выбор ассортимента товаров
+   
+   Адреса товаров по г. Пермь и Пермскому краю
+   
 🛍️ Чтобы перейти в каталог и выбрать приглянувшиеся товары возпользуйтесь командой /menu.
 
-💰 Пополнить счет можно через Яндекс.кассу, Сбербанк или Qiwi.
-
-❓ Возникли вопросы? Не проблема! Команда /sos поможет связаться с админами, которые постараются как можно быстрее откликнуться.
-
-🤝 Заказать похожего бота? Свяжитесь с разработчиком <a href="https://t.me/NikolaySimakov">Nikolay Simakov</a>, он не кусается)))
+💰 Пополнить счет можно переводом на карту
     ''', reply_markup=markup)
-
 
 @dp.message_handler(text=user_message)
 async def user_mode(message: types.Message):
@@ -44,7 +42,7 @@ async def user_mode(message: types.Message):
     if cid in config.ADMINS:
         config.ADMINS.remove(cid)
 
-    await message.answer('Включен пользовательский режим.', reply_markup=ReplyKeyboardRemove())
+    await message.answer('Бот активирован>', reply_markup=ReplyKeyboardRemove())
 
 
 @dp.message_handler(text=admin_message)

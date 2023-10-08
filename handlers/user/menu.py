@@ -25,6 +25,6 @@ async def user_menu(message: Message):
     markup = ReplyKeyboardMarkup(selective=True)
     markup.add(catalog)
     markup.add(balance, cart)
-    markup.add(delivery_status)
+    # markup.add(delivery_status)
 
     await message.answer('Меню', reply_markup=markup)

@@ -54,7 +54,6 @@ async def process_cart(message: Message, state: FSMContext):
         if order_cost != 0:
             markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
             markup.add('📦 Оформить заказ')
-
             await message.answer('Перейти к оформлению?',
                                  reply_markup=markup)
 
@@ -144,59 +143,32 @@ async def process_check_cart_back(message: Message, state: FSMContext):
 @dp.message_handler(IsUser(), text=all_right_message, state=CheckoutState.check_cart)
 async def process_check_cart_all_right(message: Message, state: FSMContext):
     await CheckoutState.next()
-    await message.answer('Укажите свое имя.',
-                         reply_markup=back_markup())
-
-
-@dp.message_handler(IsUser(), text=back_message, state=CheckoutState.name)
-async def process_name_back(message: Message, state: FSMContext):
-    await CheckoutState.check_cart.set()
-    await checkout(message, state)
-
-
-@dp.message_handler(IsUser(), state=CheckoutState.name)
-async def process_name(message: Message, state: FSMContext):
-
-    async with state.proxy() as data:
-
-        data['name'] = message.text
-
-        if 'address' in data.keys():
-
-            await confirm(message)
-            await CheckoutState.confirm.set()
-
-        else:
-
-            await CheckoutState.next()
-            await message.answer('Укажите свой адрес места жительства.',
-                                 reply_markup=back_markup())
+    await message.answer('Напишите район выдачи адреса:',
+                         reply_markup=confirm_markup_2())
 
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.address)
 async def process_address_back(message: Message, state: FSMContext):
-
-    async with state.proxy() as data:
-
-        await message.answer('Изменить имя с <b>' + data['name'] + '</b>?',
-                             reply_markup=back_markup())
-
-    await CheckoutState.name.set()
+    await CheckoutState.check_cart.set()
+    await checkout(message, state)
 
 
 @dp.message_handler(IsUser(), state=CheckoutState.address)
 async def process_address(message: Message, state: FSMContext):
 
     async with state.proxy() as data:
+
         data['address'] = message.text
 
-    await confirm(message)
-    await CheckoutState.next()
-
+        await confirm(message)
+        await CheckoutState.next()
 
 async def confirm(message):
 
-    await message.answer('Убедитесь, что все правильно оформлено и подтвердите заказ.',
+    await message.answer('Убедитесь, что все правильно оформлено и подтвердите заказ.\n'
+                         '\nПосле подтверждения операции с вашего баланса аккаунта спишется сумма оформленного заказа, '
+                         'проверьте хватает ли вам денег на счете ! \nЕсли нет пополните баланс перейдя '
+                         'в категорию меню Баланс',
                          reply_markup=confirm_markup())
 
 
@@ -223,8 +195,6 @@ async def process_confirm(message: Message, state: FSMContext):
 
     if enough_money:
 
-        logging.info('Deal was made.')
-
         async with state.proxy() as data:
 
             cid = message.chat.id
@@ -232,16 +202,19 @@ async def process_confirm(message: Message, state: FSMContext):
                         for idx, quantity in db.fetchall('''SELECT idx, quantity FROM cart
             WHERE cid=?''', (cid,))]  # idx=quantity
 
-            db.query('INSERT INTO orders VALUES (?, ?, ?, ?)',
-                     (cid, data['name'], data['address'], ' '.join(products)))
+            db.query('INSERT INTO orders VALUES (?, ?, ?)',
+                     (cid, data['address'], ' '.join(products)))
 
             db.query('DELETE FROM cart WHERE cid=?', (cid,))
 
-            await message.answer('Ок! Ваш заказ уже в пути 🚀\nИмя: <b>' + data['name'] + '</b>\nАдрес: <b>' + data['address'] + '</b>',
+            await message.answer('Заказ ожидает оплаты, проверьте баланс аккаунта и пополните его. 🚀\nАдрес: <b>' + data['address'] + '</b>',
                                  reply_markup=markup)
     else:
 
-        await message.answer('У вас недостаточно денег на счете. Пополните баланс!',
+        await message.answer('У вас недостаточно денег на счете. Пополните баланс!✅Заявка на оплату № 29223419. Переведите на банковскую  '
+                         'карту удобным для вас способом. \nВажно пополнить '
+                         'точную сумму заказа. 2200700878893964 ‼️ у вас есть 30 мин на оплату, '
+                         'после чего платёж не будет зачислен\nПо истечению времени создайте запрос повторно номер заявки идентичный.',
                              reply_markup=markup)
 
     await state.finish()
